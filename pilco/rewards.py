@@ -95,3 +95,28 @@ class CombinedRewards(Reward):
             muR += self.coefs[c] * tmp1
             sR += self.coefs[c]**2 * tmp2
         return muR, sR
+
+
+class QuadraticReward(Reward):
+    def __init__(self, state_dim, x_goal, Q):
+        Reward.__init__(self)
+        self.state_dim = state_dim
+        self.Q = Param(np.reshape(Q, (state_dim, state_dim)), trainable=False)
+        self.x_goal = Param(np.reshape(x_goal, (1, state_dim)), trainable=False)
+    
+    @params_as_tensors
+    def compute_reward(self, m, s):
+        '''
+        Reward function, calculating mean and variance of rewards, given
+        mean and variance of state distribution, along with the target State
+        and a weight matrix.
+        Input m : [1, k]
+        Input s : [k, k]
+
+        Output M : [1, 1]
+        Output S  : [1, 1]
+        '''
+        muR = -0.5 * (m - self.x_goal) @ self.Q @ tf.transpose(m - self.x_goal)
+        J = -2 * (m @ self.Q - self.x_goal @ self.Q)
+        sR = J @ s @ tf.transpose(J)
+        return muR, sR
